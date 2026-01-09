@@ -19,6 +19,6 @@
         "aws4fetch": "^1.0.20",
         "typescript": "^5.5.2",
         "vitest": "~3.2.0",
-        "wrangler": "^4.57.0"
+        "wrangler": "^4.58.0"
     }
 }
