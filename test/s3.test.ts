@@ -14,6 +14,7 @@ const ENV = {
     GOOGLE_REFRESH_TOKEN: "test-refresh-token",
     AUTH_KV: createMockKV(),
     FOLDER_CACHE: createMockKV(),
+    ALLOWED_BUCKETS: "test-bucket,empty-bucket,my-bucket",
 };
 
 const CTX = {
@@ -222,7 +223,7 @@ describe("S3 API Server with Google Drive Backend", () => {
 
         const command = new GetObjectCommand({
             Bucket: "my-bucket",
-            Key: "test.png",
+            Key: "my-bucket/test.png",
         });
 
         const url = await getSignedUrl(s3, command, { expiresIn: 3600 });

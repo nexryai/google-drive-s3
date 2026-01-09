@@ -6,9 +6,8 @@
 export default {
     async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
         try {
-            const isValid = await verifySignature(request, env);
-            if (!isValid) {
-                return new Response("Invalid Signature", { status: 403 });
+            if (request.method === "OPTIONS") {
+                return new Response(null, { status: 204 });
             }
 
             const url = new URL(request.url);
@@ -18,6 +17,19 @@ export default {
             const pathParts = url.pathname.split("/").filter((p) => p);
             const bucket = pathParts[0] || "";
             const objectKey = pathParts.slice(1).join("/");
+
+            if (!isValidPath(bucket, objectKey)) {
+                return new Response("Invalid path", { status: 400 });
+            }
+
+            if (!isAllowedBucket(bucket, env)) {
+                return new Response("Access denied to this bucket", { status: 403 });
+            }
+
+            const isValid = await verifySignature(request, env);
+            if (!isValid) {
+                return new Response("Invalid Signature", { status: 403 });
+            }
 
             const accessToken = await getAccessToken(env);
 
@@ -125,6 +137,7 @@ interface Env {
     GOOGLE_REFRESH_TOKEN: string;
     AUTH_KV: KVNamespace;
     FOLDER_CACHE: KVNamespace;
+    ALLOWED_BUCKETS?: string;
 }
 
 interface GoogleDriveFile {
@@ -137,6 +150,71 @@ interface GoogleDriveFile {
 
 interface GoogleDriveSearchResponse {
     files?: GoogleDriveFile[];
+}
+
+// ========================================
+// Security Functions
+// ========================================
+
+function isValidPath(bucket: string, objectKey: string): boolean {
+    // バケット名の検証
+    if (!bucket || bucket.includes("..") || bucket.includes("/") || bucket.includes("\\")) {
+        return false;
+    }
+
+    // オブジェクトキーの検証
+    if (objectKey) {
+        // ".." を含むパスを拒否
+        if (objectKey.includes("..")) {
+            return false;
+        }
+
+        // バックスラッシュを含むパスを拒否 (Windowsスタイルのパス)
+        if (objectKey.includes("\\")) {
+            return false;
+        }
+
+        // 絶対パスを拒否
+        if (objectKey.startsWith("/")) {
+            return false;
+        }
+
+        // パスの各コンポーネントを検証
+        const parts = objectKey.split("/");
+        for (const part of parts) {
+            // 空のコンポーネントや "." を拒否
+            if (!part || part === "." || part === "..") {
+                return false;
+            }
+
+            // NULLバイトを拒否
+            if (part.includes("\0")) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+function isAllowedBucket(bucket: string, env: Env): boolean {
+    console.log(bucket);
+    // 許可リストが設定されていない場合はすべて拒否
+    if (!env.ALLOWED_BUCKETS) {
+        return false;
+    }
+
+    const allowedBuckets = env.ALLOWED_BUCKETS.split(",")
+        .map((b) => b.trim())
+        .filter((b) => b);
+
+    // 空の許可リストの場合もすべて拒否
+    if (allowedBuckets.length === 0) {
+        return false;
+    }
+
+    // バケット名が許可リストに含まれているかチェック
+    return allowedBuckets.includes(bucket);
 }
 
 // ========================================
