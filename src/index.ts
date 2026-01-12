@@ -304,9 +304,17 @@ async function streamDownloadFromDrive(accessToken: string, bucket: string, obje
         throw new Error("File not found");
     }
 
+    const controller = new AbortController();  
+    const timeout = setTimeout(() => {
+        controller.abort();
+    }, 5000);
+    
     const downloadRes = await fetch(`https://www.googleapis.com/drive/v3/files/${file.id}?alt=media`, {
         headers: { Authorization: `Bearer ${accessToken}` },
+        signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!downloadRes.ok) {
         console.error(downloadRes.status);
