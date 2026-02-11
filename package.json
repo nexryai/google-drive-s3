@@ -13,7 +13,7 @@
     },
     "devDependencies": {
         "@aws-sdk/client-s3": "^3.965.0",
-        "@aws-sdk/s3-request-presigner": "^3.965.0",
+        "@aws-sdk/s3-request-presigner": "^3.987.0",
         "@biomejs/biome": "^2.3.11",
         "@cloudflare/vitest-pool-workers": "^0.12.1",
         "aws4fetch": "^1.0.20",
