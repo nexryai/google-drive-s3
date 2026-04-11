@@ -1017,4 +1017,81 @@ describe("S3 API Server with Google Drive Backend", () => {
 
         global.fetch = originalFetch;
     });
+
+    // ========================================
+    // Public Read Tests
+    // ========================================
+
+    const PUBLIC_READ_ENV = {
+        ...ENV,
+        PUBLIC_READ_BUCKETS: "public-bucket",
+        ALLOWED_BUCKETS: "test-bucket,empty-bucket,my-bucket,public-bucket",
+    };
+
+    // 16. Public read bucket - unsigned GET should succeed
+    it("should allow unsigned GET on public read bucket", async () => {
+        const request = new Request(`${endpoint}/public-bucket/test-file.txt`, {
+            method: "GET",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(200);
+        expect(await response.text()).toBe("Hello World");
+    });
+
+    // 17. Public read bucket - unsigned HEAD should succeed
+    it("should allow unsigned HEAD on public read bucket", async () => {
+        const request = new Request(`${endpoint}/public-bucket/test-file.txt`, {
+            method: "HEAD",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(200);
+        expect(response.headers.get("Content-Type")).toBe("text/plain");
+        expect(response.headers.get("Content-Length")).toBe("11");
+    });
+
+    // 18. Public read bucket - unsigned PUT should be rejected
+    it("should reject unsigned PUT on public read bucket", async () => {
+        const request = new Request(`${endpoint}/public-bucket/test-file.txt`, {
+            method: "PUT",
+            headers: { "Content-Type": "text/plain" },
+            body: "Hello World",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(403);
+    });
+
+    // 19. Public read bucket - unsigned DELETE should be rejected
+    it("should reject unsigned DELETE on public read bucket", async () => {
+        const request = new Request(`${endpoint}/public-bucket/test-file.txt`, {
+            method: "DELETE",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(403);
+    });
+
+    // 20. Non-public bucket - unsigned GET should still be rejected
+    it("should reject unsigned GET on non-public bucket", async () => {
+        const request = new Request(`${endpoint}/test-bucket/test-file.txt`, {
+            method: "GET",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(403);
+    });
+
+    // 21. Public read bucket - unsigned list (GET without key) should succeed
+    it("should allow unsigned list on public read bucket", async () => {
+        const request = new Request(`${endpoint}/public-bucket/`, {
+            method: "GET",
+        });
+
+        const response = await worker.fetch(request, PUBLIC_READ_ENV, CTX);
+        expect(response.status).toBe(200);
+        const xmlText = await response.text();
+        expect(xmlText).toContain("<ListBucketResult");
+    });
 });

@@ -22,9 +22,14 @@ export default {
                 return new Response("Access denied to this bucket", { status: 403 });
             }
 
-            const isValid = await verifySignature(request, env);
-            if (!isValid) {
-                return new Response("Invalid Signature", { status: 403 });
+            const isPublicRead = isPublicReadBucket(bucket, env);
+            const isReadMethod = method === "GET" || method === "HEAD";
+
+            if (!(isPublicRead && isReadMethod)) {
+                const isValid = await verifySignature(request, env);
+                if (!isValid) {
+                    return new Response("Invalid Signature", { status: 403 });
+                }
             }
 
             const accessToken = await getAccessToken(env);
@@ -135,6 +140,7 @@ interface Env {
     AUTH_KV: KVNamespace;
     FOLDER_CACHE: KVNamespace;
     ALLOWED_BUCKETS?: string;
+    PUBLIC_READ_BUCKETS?: string;
 }
 
 interface GoogleDriveFile {
@@ -167,6 +173,18 @@ function isAllowedBucket(bucket: string, env: Env): boolean {
 
     // バケット名が許可リストに含まれているかチェック
     return allowedBuckets.includes(bucket);
+}
+
+function isPublicReadBucket(bucket: string, env: Env): boolean {
+    if (!env.PUBLIC_READ_BUCKETS) {
+        return false;
+    }
+
+    const publicReadBuckets = env.PUBLIC_READ_BUCKETS.split(",")
+        .map((b) => b.trim())
+        .filter((b) => b);
+
+    return publicReadBuckets.includes(bucket);
 }
 
 // ========================================
