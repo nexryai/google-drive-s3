@@ -2,6 +2,7 @@
     "name": "google-drive-s3",
     "version": "0.0.0",
     "private": true,
+    "packageManager": "pnpm@10.33.0",
     "scripts": {
         "deploy": "pnpx wrangler deploy",
         "dev": "pnpx wrangler dev",
