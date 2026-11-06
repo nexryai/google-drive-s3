@@ -375,7 +375,7 @@ async function streamDownloadFromDrive(accessToken: string, bucket: string, obje
     return {
         body: downloadRes.body!,
         contentType: file.mimeType || "application/octet-stream",
-        size: parseInt(file.size || "0"),
+        size: parseInt(file.size || "0", 10),
         id: file.id,
     };
 }
@@ -409,7 +409,7 @@ async function getFileMetadata(accessToken: string, bucket: string, objectKey: s
     return {
         id: file.id,
         mimeType: file.mimeType || "application/octet-stream",
-        size: parseInt(file.size || "0"),
+        size: parseInt(file.size || "0", 10),
     };
 }
 
@@ -557,7 +557,7 @@ function encodeRFC3986(str: string): string {
 }
 
 async function getSigningKey(secret: string, date: string, region: string, service: string): Promise<ArrayBuffer> {
-    const kDate = await hmacSha256("AWS4" + secret, date);
+    const kDate = await hmacSha256(`AWS4${secret}`, date);
     const kRegion = await hmacSha256(kDate, region);
     const kService = await hmacSha256(kRegion, service);
     return await hmacSha256(kService, "aws4_request");

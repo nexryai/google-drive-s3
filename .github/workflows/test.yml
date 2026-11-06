@@ -2,26 +2,25 @@ name: Unit testing CI
 on: [push, pull_request]
 permissions: {}
 
-
 jobs:
-  build:
-    name: Test with Vitest
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
+    build:
+        name: Test with Vitest
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v6
 
-      - name: Setup Node.js
-        run: sudo snap install node --channel=24/stable --classic
+            - name: Setup Node.js
+              run: sudo snap install node --channel=24/stable --classic
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+            - name: Install pnpm
+              run: npm install -g pnpm
 
-      - name: Install dependencies
-        run: pnpm install
+            - name: Install dependencies
+              run: pnpm install
 
-      - name: Run Vitest
-        run: pnpm test
+            - name: Run Vitest
+              run: pnpm test
